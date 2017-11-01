@@ -158,11 +158,12 @@ size(Tau_Total)
 % end
 % end
 
+
 for Expression = 1:size(uniExpression,1)
+    count = 0;
     Temp_Total_uniExp = unique(Tau_Total.Exp_Name((contains(cell(Tau_Total.Exp_Name),cellstr(uniExpression(Expression)),'IgnoreCase',true))))
     for drug = 1:size(unique_Treatments,1)
         figure();hold on;
-        count = 0;
         for experiment = 1:size(Temp_Total_uniExp)
             count = count +1;
             x = categorical(Tau_Total.Treatment((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
@@ -174,18 +175,21 @@ for Expression = 1:size(uniExpression,1)
                 |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
                 & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))))
             
-            scatter(x,y) 
+            scatter(x,y)
+            
             temp_legend(count,1) = unique((Tau_Total.Exp_Name((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
                 &(contains(cell(Tau_Total.Treatment),cellstr(unique_Treatments(drug)))...
                 |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
                 & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression))))), 'stable')
         end
+        
         hold off;
         title(['Cell Cycle Length for ' char((uniExpression(Expression))) ' ' char(unique_Treatments(drug))])
         legend (temp_legend)
         ylabel('Cell Cycle Length (1/\tau)');
-        clearvars temp_legend 
+        clearvars temp_legend count
     end
+    
 end
 % --------------------------------------------------------------
 
