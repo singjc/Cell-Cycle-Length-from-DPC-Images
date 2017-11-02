@@ -8,10 +8,31 @@ Total_uniExp = unique(data.Exp_Name,'stable'); %Stores unique experiments, prese
 % uniExp = num2cell(uniExp);
 Storage_Path = uigetdir(Excel_Path,'Select the Folder you wish to store the output files in'); %Prompts user for where they wish to store their output files.
 Tau_Total = table();
+Known_Field_Names = ''
+DataStructFile = java.io.File([pwd '\DataStructure.mat']);
+if DataStructFile.exists() == 1 %Matlab equivalent to exist
+    load([pwd '\DataStructure.mat'])
+    Known_Field_Names = fieldnames(DataStructure)
+    dlgTitle    = 'User Question'; dlgQuestion = 'Do you want to use and build on the previously used Data?'; choice = questdlg(dlgQuestion,dlgTitle,'Yes','No', 'Yes');
+    if string(choice) == string('No')
+        dlgTitle    = 'User Question'; dlgQuestion = 'Do you want to delete the old Data and start anew?'; choice2 = questdlg(dlgQuestion,dlgTitle,'Yes','No', 'Yes');
+        if string(choice2) == string('Yes')
+            DataStructFile.delete %Deletes DataStructure.mat file
+            
+        end
+        
+    end
+    
+end
+
 for count = 1:size(Total_uniExp(uniExp),1)
-    SheetNum = 0;
+    
+    
+    
     Format_Data = table();
     TempData = data(contains(data.PathToDataset,Total_uniExp(uniExp(count))),:); %Stores only relevant data for current loop analysis.
+    
+    
     %% Import PlateMap
     [~, ~, PlateMap] = xlsread(char(TempData.Plate_Map(1)),char(TempData.Sheet(1)),char(TempData.Range(1))); %Stores platemap variables for current unique experiment.
     PlateMap = string(PlateMap);
@@ -24,46 +45,53 @@ for count = 1:size(Total_uniExp(uniExp),1)
     Drugs(ismissing(Drugs)) = '';
     unique_Control = Drugs(contains(Drugs(:,2),'Control'),1);
     unique_Treatments = Drugs(contains(Drugs(:,2),'Treatment'),1);
-        
     %%
-    
-    % For loop to loop over data in TempData for curent unique experiment.
-    for cw_Time_Point = 1:nnz(contains(TempData.PathToDataset,Total_uniExp(uniExp(count))))
-        path = TempData.PathToDataset(cw_Time_Point); File = 'ResultTable.mat'; load ([char(path) '\' File]); %Loading ResultTable data.
-        uniWells = unique(ResultTable(:,{'Row','Column'}));
-        uniWells.Treatment = reshape(PlateMap.',[60,1]);
-        Num = zeros(size(uniWells,1),1);
-        %         Table = table();
-        % loop over all wells
-        for i = 1:size(uniWells,1)
-            row = uniWells.Row(i); col=uniWells.Column(i);
-            Num(i) = sum(ResultTable.Row==row&ResultTable.Column==col); % Total number of cells per well
-            uniWells.CellCount(i) = Num(i);
+    if any(contains(Known_Field_Names, Total_uniExp(uniExp(count)))) ~= 1 || DataStructFile.exists() == 1
+        % For loop to loop over data in TempData for curent unique experiment.
+        for cw_Time_Point = 1:nnz(contains(TempData.PathToDataset,Total_uniExp(uniExp(count))))
+            path = TempData.PathToDataset(cw_Time_Point); File = 'ResultTable.mat'; load ([char(path) '\' File]); %Loading ResultTable data.
+            uniWells = unique(ResultTable(:,{'Row','Column'}));
+            uniWells.Treatment = reshape(PlateMap.',[60,1]);
+            Num = zeros(size(uniWells,1),1);
+            %         Table = table();
+            % loop over all wells
+            for i = 1:size(uniWells,1)
+                row = uniWells.Row(i); col=uniWells.Column(i);
+                Num(i) = sum(ResultTable.Row==row&ResultTable.Column==col); % Total number of cells per well
+                uniWells.CellCount(i) = Num(i);
+            end
+            filename = strcat(Storage_Path,'\','NewCellCountData_', char(Total_uniExp(uniExp(count))), '.xlsx');
+            Time_Point = TempData.Time_Point(contains(TempData.Exp_Name,char(Total_uniExp(uniExp(count)))));
+            uniWells = sortrows(uniWells, 2);
+            
+            NewData = table();
+            NewData.Treatment(1:30,:) = unique(uniWells.Treatment(1:60,:),'stable');
+            %         NewData.Treatment(16:30,:) = unique(uniWells.Treatment(31:60,:),'stable');
+            
+            %-------------------------------------------------------------------------------------------------------------
+            
+            Format_Data(:,1) = cellstr(unique(uniWells.Treatment(1:60,:),'stable'));
+            Format_Data.Properties.VariableNames{1} = 'Treatment';
+            for idx = 1:size(Format_Data.Treatment,1)
+                MedianCellNum{idx,1} = num2str((median(uniWells.CellCount(uniWells.Treatment(1:60)==NewData.Treatment(idx)))));
+            end
+            Format_Data(:,cw_Time_Point+1) = cell2table(MedianCellNum(:,1));
+            Format_Data.Properties.VariableNames{cw_Time_Point+1} = ['TP_' num2str(Time_Point(cw_Time_Point)) '_Hr'];
+            
         end
-        filename = strcat(Storage_Path,'\','NewCellCountData_', char(Total_uniExp(uniExp(count))), '.xlsx');
-        SheetNum = SheetNum + 1;
-        Time_Point = TempData.Time_Point(contains(TempData.Exp_Name,char(Total_uniExp(uniExp(count)))));
-        uniWells = sortrows(uniWells, 2);
         
-        NewData = table();
-        NewData.Treatment(1:30,:) = unique(uniWells.Treatment(1:60,:),'stable');
-%         NewData.Treatment(16:30,:) = unique(uniWells.Treatment(31:60,:),'stable');
+        FieldName = ['Dataset_' cell2mat(Total_uniExp(uniExp(count)))]
+        DataStructure.(FieldName) = Format_Data
         
-        %-------------------------------------------------------------------------------------------------------------
+        %     exist([pwd '\DataStructure.mat'],'file') %MatLab
         
-        Format_Data(:,1) = cellstr(unique(uniWells.Treatment(1:60,:),'stable'));
-        Format_Data.Properties.VariableNames{1} = 'Treatment';
-        for idx = 1:size(Format_Data.Treatment,1)
-            MedianCellNum{idx,1} = num2str((median(uniWells.CellCount(uniWells.Treatment(1:60)==NewData.Treatment(idx)))));
-        end
-        
-        Format_Data(:,cw_Time_Point+1) = cell2table(MedianCellNum(:,1));
-        Format_Data.Properties.VariableNames{cw_Time_Point+1} = ['TP_' num2str(Time_Point(cw_Time_Point)) '_Hr'];
-        
+        save('DataStructure.mat', 'DataStructure')
+        Known_Field_Names = fieldnames(DataStructure)
+        clearvars uniTreat
     end
-    clearvars uniTreat
     
-    [yCalc3,Tau,Unique_Drug] = Plotting2(char(unique(TempData.Exp_Name)),char(unique(TempData.Expression)),char(unique(TempData.CellLine)),unique(string(TempData.Date)),Format_Data);
+    [yCalc3,Tau,Unique_Drug] = Plotting2(char(unique(TempData.Exp_Name)),char(unique(TempData.Expression))...
+        ,char(unique(TempData.CellLine)),unique(string(TempData.Date)),DataStructure.(char(Known_Field_Names(count))));
     
     Prev_Tau_Count = size(Tau_Total,1);
     Tau_Total(Prev_Tau_Count+1:Prev_Tau_Count+size(Tau,1),:) = Tau;
@@ -134,7 +162,7 @@ size(Tau_Total)
 %     title(['Growth Rate of ' char(Tau_Total.CellLine(1)) ' ' char(Total_uniExp(Exp))])
 %     ylabel('Cell Cycle Length (1/\tau)');
 %     set(gca, 'XTickLabelRotation', -45);
-% %    end 
+% %    end
 %     hold off;
 % end
 %------------------------------------------------------------------
@@ -151,7 +179,7 @@ size(Tau_Total)
 %             y = cell2mat(Tau_Total.SlopeInverse(contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))...
 %                 & contains(cell(Tau_Total.Treatment),cell(temp_uniTreatments(idx)))...
 %                 & contains(cell(Tau_Total.Exp_Name),cell(Total_uniExp(experiment)))))
-%             
+%
 %             scatter(x,y)
 %         end
 %     end
@@ -174,7 +202,7 @@ for Expression = 1:size(uniExpression,1)
                 |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
                 & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))))
             
-            scatter(x,y) 
+            scatter(x,y)
             temp_legend(count,1) = unique((Tau_Total.Exp_Name((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
                 &(contains(cell(Tau_Total.Treatment),cellstr(unique_Treatments(drug)))...
                 |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
@@ -184,7 +212,7 @@ for Expression = 1:size(uniExpression,1)
         title(['Cell Cycle Length for ' char((uniExpression(Expression))) ' ' char(unique_Treatments(drug))])
         legend (temp_legend)
         ylabel('Cell Cycle Length (1/\tau)');
-        clearvars temp_legend 
+        clearvars temp_legend
     end
 end
 % --------------------------------------------------------------

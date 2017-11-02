@@ -1,38 +1,33 @@
-% Script to plot time-point DPC cell count data
-% Oct. 19, 2017
-% clear
+% Function to plot time-point DPC cell count data
 function [yCalc3,Tau,Unique_Drug] = Plotting2(Exp_Name,Expression,CellLine,Date,Format_Data)
 
-% Tau_Total = table();
-% Prev_Tau_Count = 0;
-% Curr_Tau_Count = 0;
-% Prev_Tau_Count = size(Tau_Total,1);
-
+%% Extracts Time Points
 TP_Headers = Format_Data.Properties.VariableNames(2:end)';
-
 MatchExpression = 'TP_(\d+)_Hr';
 Tokens = regexp(TP_Headers,MatchExpression,'tokens');
 for tok = 1:size(Tokens,1)
     Time_Points(tok,1) = Tokens{tok,1}{1,1};
 end
+%%
 
-[uniTreat ,~] = listdlg('PromptString','Select which Treatments you wish to analyze.','SelectionMode','multiple','ListString',Format_Data.Treatment,'ListSize',[250 250]); %Prompts user what plots they want
+[uniTreat ,~] = listdlg('PromptString','Select which Treatments you wish to analyze.','SelectionMode','multiple','ListString',Format_Data.Treatment,'ListSize',[250 250]); 
 dlgTitle    = 'User Question'; dlgQuestion = 'Do you wish to visualize via plots?'; choice = questdlg(dlgQuestion,dlgTitle,'Yes','No', 'Yes');
 
-    % ----------------------- Regular Expression for obtaining unique Drugs ---
-    Treats = Format_Data.Treatment;
-    RegEx = '(\w+ \w+ \w+)|(\w+.\w+ \w+ \w+)|(\w+) [+] \w+ ' ;
-    Tokens2 = regexp(Treats,RegEx,'tokens');
-    Tokens2
-    for tok2 = 1:size(Tokens2,1)
-        temp_Drug(tok2,1) = Tokens2{tok2,1}{1,1};
-    end
-    Unique_Drug = unique(temp_Drug, 'stable');
-    % -------------------------------------------------------------------------
+%% Extracts Unique Drugs
+Treats = Format_Data.Treatment;
+RegEx = '(\w+ \w+ \w+)|(\w+.\w+ \w+ \w+)|(\w+) [+] \w+ ' ;
+Tokens2 = regexp(Treats,RegEx,'tokens');
+Tokens2
+for tok2 = 1:size(Tokens2,1)
+    temp_Drug(tok2,1) = Tokens2{tok2,1}{1,1};
+end
+Unique_Drug = unique(temp_Drug, 'stable');
+%% 
 
-
+%% Section for plotting growth rate for each individual drug
 if string(choice) == 'Yes'
-
+    
+    
     %     --------------------------------------------- OLD ------------------
     %     [Trend_Line,~] = listdlg('PromptString','Select which Treatments you wish to have a trendline for.','SelectionMode','multiple','ListString',Format_Data.Treatment(uniTreat),'ListSize',[300 250]); %Prompts user what plots they want
     %     Colour_Range = {'[.5 .5 .5]' '[1 .4 .4]' '[.2 .4 1]' '[.3 .8 .3]' '[.6 .3 .4]' '[.9 .8 .9]' '[0 0 0]' '[0 0 1]' '[0 1 0]' '[1 0 0]' '[1 0 1]' '[1 1 0]' '[.3 .7 .5]' '[.5 0.6 1]' '[.7 .2 .9]' '[1 .2 .7]' '[.2 .9 1]' '[.1 1 .9]'}';
@@ -63,7 +58,7 @@ if string(choice) == 'Yes'
     %     hold off;
     % ------------------------------------------------------------------------
     
-
+    
     
     figure(); counter = 0; start = 0; last = 2;
     for treat = 1:size(Unique_Drug,1)
@@ -76,7 +71,7 @@ if string(choice) == 'Yes'
             y(:,value)
             [curvefit,gof] = fit(x,y(:,value),'exp1');
             plot (x,y)
-%             plot(curvefit, '--')
+            %             plot(curvefit, '--')
         end
         hold off;
         title(char(Unique_Drug(treat)))
@@ -92,16 +87,17 @@ if string(choice) == 'Yes'
     suptitle(['Log2 Cell Number of ' char(CellLine) ' ' char(Expression) ' cells ' char(Date)])
     
 end
+%% 
 
 clearvars count
 Tau = table();
 count = 1;
 % figure(); hold on;
-for i = 1:size(uniTreat,2)    
+for i = 1:size(uniTreat,2)
     x = str2double(Time_Points);
-    y = log2(cellfun(@str2num,(table2cell(Format_Data(uniTreat(i),2:size(Format_Data,2)))')));    
+    y = log2(cellfun(@str2num,(table2cell(Format_Data(uniTreat(i),2:size(Format_Data,2)))')));
     [R,P] = corrcoef(x,y); %Correlation Coefficient will tell you how linear a data set is. 1 is positive correlation, -1 is negative correlation.
-  
+    
     %         if P(2) < 0.05
     %     %-------- Calculating R Correlation Coefficient--------%
     %     a=mean(x); b=mean(y);
@@ -144,7 +140,7 @@ for i = 1:size(uniTreat,2)
     
     
     count = count + 1;
-%     Curr_Tau_Count = size(Tau,1);
+    %     Curr_Tau_Count = size(Tau,1);
 end
 
 % Tau_Total(Prev_Tau_Count+1:Prev_Tau_Count+size(Tau,1),:) = Tau;
