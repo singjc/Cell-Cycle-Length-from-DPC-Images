@@ -19,11 +19,10 @@ Treats = Format_Data.Treatment;
 RegEx = '(\d+\s\w+\s\w+|\d+.\d+\s\w+\s\w+|\w+)\s[+]\s(\d+\s\w+/\w+\s\w+|\w+\s\w+)'
 Tokens2 = regexp(Treats,RegEx,'tokens');
 for tok2 = 1:size(Tokens2,1)
-    temp_Drug(tok2,1) = cellstr(Tokens2{tok2,1}{1,1}{1,1});
-    temp_Co_Drug(tok2,1) = cellstr(Tokens2{tok2,1}{1,1}{1,2});
+    temp_Drug(tok2) = Tokens2{tok2,1}{1,1}{1,1};
+    temp_Co_Drug(tok2,1) = Tokens2{tok2,1}{1,1}{1,2};
 end
 Unique_Drug = unique(temp_Drug, 'stable');
-Unique_Co_Drug = unique(temp_Co_Drug,'stable');
 %% 
 
 %% Section for plotting growth rate for each individual drug
@@ -79,8 +78,11 @@ if string(choice) == 'Yes'
         title(char(Unique_Drug(treat)))
         start = start+2; last = last+2;
         
-        legend(Unique_Co_Drug) 
-
+        if string(Expression) == string('cycE1')
+            legend({'100 ng/mL doxycyclin', '50 ng/mL doxycyclin', 'Nodoxycyclin'}) %For cycE1
+        else
+            legend({'1000 ng/mL doxycyclin', '100 ng/mL doxycyclin', 'No doxycyclin'}) %For cycD1 and p27
+        end
         
     end
     suptitle(['Log2 Cell Number of ' char(CellLine) ' ' char(Expression) ' cells ' char(Date)])
