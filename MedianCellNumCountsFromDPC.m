@@ -1,4 +1,6 @@
 clear
+parpool
+tic
 [Excel_File,Excel_Path,Filer_Index] = uigetfile('*.xlsx','Select the Excel Data File'); %Prompts user for the excel file that contains their data.
 warning off
 data = readtable([char(Excel_Path) char(Excel_File)]); %Reads excel file and stores information as a table variable.
@@ -85,7 +87,7 @@ for count = 1:size(Total_uniExp(uniExp),1)
         
         %     exist([pwd '\DataStructure.mat'],'file') %MatLab
         Format_Data;
-        save('DataStructure.mat', 'DataStructure')
+        
         Known_Field_Names = fieldnames(DataStructure);
         clearvars uniTreat
     end
@@ -93,11 +95,14 @@ for count = 1:size(Total_uniExp(uniExp),1)
     [yCalc3,Tau,Unique_Drug] = Plotting2(char(unique(TempData.Exp_Name)),char(unique(TempData.Expression))...
         ,char(unique(TempData.CellLine)),unique(string(TempData.Date)),DataStructure.(FieldName).('CellNumber'));
     
+    DataStructure.(FieldName).('Tau') = Tau;
+    
     Prev_Tau_Count = size(Tau_Total,1);
     Tau_Total(Prev_Tau_Count+1:Prev_Tau_Count+size(Tau,1),:) = Tau;
     
     %     writetable(Format_Data,filename,'sheet',1)
     Tau;
+    save('DataStructure.mat', 'DataStructure')
     clearvars PlateMap
 end
 
@@ -218,5 +223,7 @@ end
 % --------------------------------------------------------------
 
 system('taskkill /F /IM EXCEL.EXE');
+delete(gcp('nocreate')) %Shuts down parrallel pool
+toc
 % clear
 

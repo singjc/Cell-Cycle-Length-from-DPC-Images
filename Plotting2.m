@@ -10,9 +10,10 @@ for tok = 1:size(Tokens,1)
 end
 %%
 
-[uniTreat ,~] = listdlg('PromptString','Select which Treatments you wish to analyze.','SelectionMode','multiple','ListString',Format_Data.Treatment,'ListSize',[250 250]); 
+% [uniTreat ,~] = listdlg('PromptString','Select which Treatments you wish to analyze.','SelectionMode','multiple','ListString',Format_Data.Treatment,'ListSize',[250 250]); 
+uniTreat = 1:size(Format_Data.Treatment,1);
 % dlgTitle    = 'User Question'; dlgQuestion = 'Do you wish to visualize via plots?'; choice = questdlg(dlgQuestion,dlgTitle,'Yes','No', 'Yes');
-choice = 'Yes'
+choice = 'No'
 %% Extracts Unique Drugs
 
 Treats = Format_Data.Treatment;
