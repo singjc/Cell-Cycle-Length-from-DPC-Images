@@ -1,8 +1,8 @@
 % Function to plot time-point DPC cell count data
-function [yCalc3,Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,Expression,CellLine,Date,Format_Data)
+function [yCalc3,Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,ExpressionStr,CellLine,Date,Format_Data_Input)
 
 %% Extracts Time Points
-TP_Headers = Format_Data.Properties.VariableNames(2:end)';
+TP_Headers = Format_Data_Input.Properties.VariableNames(2:end)';
 MatchExpression = 'TP_(\d+)_Hr';
 Tokens = regexp(TP_Headers,MatchExpression,'tokens');
 for tok = 1:size(Tokens,1)
@@ -10,13 +10,13 @@ for tok = 1:size(Tokens,1)
 end
 %%
 
-% [uniTreat ,~] = listdlg('PromptString','Select which Treatments you wish to analyze.','SelectionMode','multiple','ListString',Format_Data.Treatment,'ListSize',[250 250]); 
-uniTreat = 1:size(Format_Data.Treatment,1);
+% [uniTreat ,~] = listdlg('PromptString','Select which Treatments you wish to analyze.','SelectionMode','multiple','ListString',Format_Data.Treatment,'ListSize',[250 250]);
+uniTreat = 1:size(Format_Data_Input.Treatment,1);
 % dlgTitle    = 'User Question'; dlgQuestion = 'Do you wish to visualize via plots?'; choice = questdlg(dlgQuestion,dlgTitle,'Yes','No', 'Yes');
 choice = 'No'
 %% Extracts Unique Drugs
 
-Treats = Format_Data.Treatment;
+Treats = Format_Data_Input.Treatment;
 RegEx = '(\d+\s\w+\s\w+|\d+.\d+\s\w+\s\w+|\w+)\s[+]\s(\d+\s\w+/\w+\s\w+|\w+\s\w+)'
 Tokens2 = regexp(Treats,RegEx,'tokens');
 for tok2 = 1:size(Tokens2,1)
@@ -25,7 +25,7 @@ for tok2 = 1:size(Tokens2,1)
 end
 Unique_Drug = unique(temp_Drug, 'stable');
 Unique_Co_Drug = unique(temp_Co_Drug,'stable');
-%% 
+%%
 
 %% Section for plotting growth rate for each individual drug
 if string(choice) == 'Yes'
@@ -68,7 +68,7 @@ if string(choice) == 'Yes'
         counter = counter+1;
         subplot(2,5,counter);hold on;
         x = str2double(Time_Points);
-        y = log2(cellfun(@str2num,(table2cell(Format_Data(treat+start:treat+last,2:size(Format_Data,2)))')));
+        y = log2(cellfun(@str2num,(table2cell(Format_Data_Input(treat+start:treat+last,2:size(Format_Data_Input,2)))')));
         char(Unique_Drug(treat))
         for value = 1:size(y,2)
             y(:,value)
@@ -80,14 +80,14 @@ if string(choice) == 'Yes'
         title(char(Unique_Drug(treat)))
         start = start+2; last = last+2;
         
-        legend(Unique_Co_Drug) 
-
+        legend(Unique_Co_Drug)
+        
         
     end
-    suptitle(['Log2 Cell Number of ' char(CellLine) ' ' char(Expression) ' cells ' char(Date)])
+    suptitle(['Log2 Cell Number of ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date)])
     
 end
-%% 
+%%
 
 clearvars count
 Tau = table();
@@ -95,7 +95,7 @@ count = 1;
 % figure(); hold on;
 for i = 1:size(uniTreat,2)
     x = str2double(Time_Points);
-    y = log2(cellfun(@str2num,(table2cell(Format_Data(uniTreat(i),2:size(Format_Data,2)))')));
+    y = log2(cellfun(@str2num,(table2cell(Format_Data_Input(uniTreat(i),2:size(Format_Data_Input,2)))')));
     [R,P] = corrcoef(x,y); %Correlation Coefficient will tell you how linear a data set is. 1 is positive correlation, -1 is negative correlation.
     
     %         if P(2) < 0.05
@@ -128,9 +128,9 @@ for i = 1:size(uniTreat,2)
     Rsq3 = 1 - (sum((y - yCalc3).^2)/sum((y - mean(y)).^2));
     
     Tau.Exp_Name(i,1) = cellstr(Exp_Name);
-    Tau.Expression(i,1) = cellstr(Expression);
+    Tau.Expression(i,1) = cellstr(ExpressionStr);
     Tau.CellLine(i,1) = cellstr(CellLine);
-    Tau.Treatment(i,1) = table2cell(Format_Data(uniTreat(i),1));
+    Tau.Treatment(i,1) = table2cell(Format_Data_Input(uniTreat(i),1));
     Tau.Slope(i,1) = num2cell((Polyfit_Coeff(1)));
     Tau.SlopeInverse(i,1) = num2cell(1/(Polyfit_Coeff(1)));
     Tau.R_Calc(i,1) = num2cell(Rsq3);
@@ -144,6 +144,48 @@ for i = 1:size(uniTreat,2)
 end
 
 % Tau_Total(Prev_Tau_Count+1:Prev_Tau_Count+size(Tau,1),:) = Tau;
-clearvars uniTreat data Format_Data Time_Points
+% clearvars uniTreat data Format_Data_Input Time_Points
+
+%% Least Square Fit
+
+for i = 1:size(uniTreat,2)
+    x = str2double(Time_Points)
+    y = log2(cellfun(@str2num,(table2cell(Format_Data_Input(uniTreat(i),2:size(Format_Data_Input,2)))')));
+    
+    f = fittype('m*x + b');
+    
+    [fit1,gof,fitinfo] = fit(x,y,f,'StartPoint',[1 1]);
+    
+    % Get the residuals from the fitinfo structure.
+    residuals = fitinfo.residuals;
+    
+    % Identify "outliers" as points at an arbitrary distance greater than 1.5 standard deviations from the baseline model, and refit the data with the outliers excluded.
+    I = abs( residuals) > 1.5 * std( residuals );
+    outliers = excludedata(x,y,'indices',I);
+    
+    fit2 = fit(x,y,f,'StartPoint',[1 1],...
+        'Exclude',outliers);
+    
+    % Compare the effect of excluding the outliers with the effect of giving them lower bisquare weight in a robust fit.
+    fit3 = fit(x,y,f,'StartPoint',[1 1],'Robust','on');
+    
+    % Plot the data, the outliers, and the results of the fits. Specify an informative legend.
+    plot(fit1,'r-',x,y,'k.',outliers,'m*')
+    hold on
+    plot(fit2,'c--')
+    plot(fit3,'b:')
+    xlim([0 2*pi])
+    legend( 'Data', 'Data excluded from second fit', 'Original fit',...
+        'Fit with points excluded', 'Robust fit' )
+    hold off
+    
+    % Plot the residuals for the two fits considering outliers:
+    figure
+    plot(fit2,x,y,'co','residuals')
+    hold on
+    plot(fit3,x,y,'bx','residuals')
+    hold off
+end
+%%
 
 end

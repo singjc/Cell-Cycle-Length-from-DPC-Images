@@ -92,8 +92,13 @@ for count = 1:size(Total_uniExp(uniExp),1)
         clearvars uniTreat
     end
     
-    [yCalc3,Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(char(unique(TempData.Exp_Name)),char(unique(TempData.Expression))...
-        ,char(unique(TempData.CellLine)),unique(string(TempData.Date)),DataStructure.(FieldName).('CellNumber'));
+    Exp_Name = char(unique(TempData.Exp_Name));
+    ExpressionStr = char(unique(TempData.Expression));
+    CellLine = char(unique(TempData.CellLine));
+    Date = unique(string(TempData.Date));
+    Format_Data_Input = DataStructure.(FieldName).('CellNumber');
+    
+    [yCalc3,Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,ExpressionStr,CellLine,Date,Format_Data_Input);
     
     DataStructure.(FieldName).('Tau') = Tau;
     
