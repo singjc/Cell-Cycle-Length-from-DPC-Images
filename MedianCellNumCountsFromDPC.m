@@ -86,13 +86,13 @@ for count = 1:size(Total_uniExp(uniExp),1)
         DataStructure.(FieldName).('CellNumber') = Format_Data;
         
         %     exist([pwd '\DataStructure.mat'],'file') %MatLab
-        Format_Data;
+       
         
         Known_Field_Names = fieldnames(DataStructure);
         clearvars uniTreat
     end
     
-    [yCalc3,Tau,Unique_Drug] = Plotting2(char(unique(TempData.Exp_Name)),char(unique(TempData.Expression))...
+    [yCalc3,Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(char(unique(TempData.Exp_Name)),char(unique(TempData.Expression))...
         ,char(unique(TempData.CellLine)),unique(string(TempData.Date)),DataStructure.(FieldName).('CellNumber'));
     
     DataStructure.(FieldName).('Tau') = Tau;

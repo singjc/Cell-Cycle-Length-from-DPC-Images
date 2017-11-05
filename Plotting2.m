@@ -1,5 +1,5 @@
 % Function to plot time-point DPC cell count data
-function [yCalc3,Tau,Unique_Drug] = Plotting2(Exp_Name,Expression,CellLine,Date,Format_Data)
+function [yCalc3,Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,Expression,CellLine,Date,Format_Data)
 
 %% Extracts Time Points
 TP_Headers = Format_Data.Properties.VariableNames(2:end)';
