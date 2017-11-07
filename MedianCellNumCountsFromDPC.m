@@ -29,10 +29,10 @@ end
 
 if isempty(uniExp) == 0
     for count = 1:size(Total_uniExp(uniExp),1)
-
+        
         Format_Data = table();
         TempData = data(contains(data.PathToDataset,Total_uniExp(uniExp(count))),:); %Stores only relevant data for current loop analysis.
-    
+        
         %% Import PlateMap
         [~, ~, PlateMap] = xlsread(char(TempData.Plate_Map(1)),char(TempData.Sheet(1)),char(TempData.Range(1))); %Stores platemap variables for current unique experiment.
         PlateMap = string(PlateMap);
@@ -86,12 +86,17 @@ if isempty(uniExp) == 0
             %     exist([pwd '\DataStructure.mat'],'file') %MatLab
             
             
-%             Known_Field_Names = fieldnames(DataStructure);
+            %             Known_Field_Names = fieldnames(DataStructure);
             clearvars uniTreat
         end
         
-        [yCalc3,Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(char(unique(TempData.Exp_Name)),char(unique(TempData.Expression))...
-            ,char(unique(TempData.CellLine)),unique(string(TempData.Date)),DataStructure.(FieldName).('CellNumber'));
+        Exp_Name = char(unique(TempData.Exp_Name));
+        ExpressionStr = char(unique(TempData.Expression));
+        CellLine = char(unique(TempData.CellLine));
+        Date = unique(string(TempData.Date));
+        Format_Data_Input = DataStructure.(FieldName).('CellNumber');
+        
+        [Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,ExpressionStr,CellLine,Date,Format_Data_Input,Excel_Path);
         
         DataStructure.(FieldName).('Tau') = Tau;
         
@@ -102,28 +107,7 @@ if isempty(uniExp) == 0
         Tau;
         save('DataStructure.mat', 'DataStructure')
         clearvars PlateMap
-    end
-<<<<<<< HEAD
-=======
-    
-    Exp_Name = char(unique(TempData.Exp_Name));
-    ExpressionStr = char(unique(TempData.Expression));
-    CellLine = char(unique(TempData.CellLine));
-    Date = unique(string(TempData.Date));
-    Format_Data_Input = DataStructure.(FieldName).('CellNumber');
-    
-    [Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,ExpressionStr,CellLine,Date,Format_Data_Input,Excel_Path);
-    
-    DataStructure.(FieldName).('Tau') = Tau;
-    
-    Prev_Tau_Count = size(Tau_Total,1);
-    Tau_Total(Prev_Tau_Count+1:Prev_Tau_Count+size(Tau,1),:) = Tau;
-    
-    %     writetable(Format_Data,filename,'sheet',1)
-    Tau;
-    save('DataStructure.mat', 'DataStructure')
-    clearvars PlateMap
->>>>>>> LeastSquaresFit
+    end  
 end
 clearvars filename Prev_Tau_Count TempData
 % filename = strcat(Storage_Path,'\','Tau_Total', '.xlsx');
@@ -142,30 +126,34 @@ for Field_Name = 1:size(Known_Field_Names,1)
     end
 end
 %%
-
-Prev_Tau_Count = 0;
-for Expression_Line = 1:size(uniExpression)
-    uniTreatments = unique(Tau_Total.Treatment(contains((Tau_Total.Expression),char(uniExpression(Expression_Line)))),'stable');
-    string(uniExpression(Expression_Line))
-    for Treatment = 1:size(uniTreatments)
-        
-        medianTau = median(cell2mat(Tau_Total.Slope(strcmp((Tau_Total.Expression),char(uniExpression(Expression_Line)))...
-            & strcmp((Tau_Total.Treatment),char(uniTreatments(Treatment))),:)));
-        stdTau = std(cell2mat(Tau_Total.Slope(strcmp((Tau_Total.Expression),char(uniExpression(Expression_Line)))...
-            & strcmp((Tau_Total.Treatment),char(uniTreatments(Treatment))),:)));
-        TempData.Expression(Treatment,1) =  string(uniExpression(Expression_Line));
-        TempData.Treatment(Treatment,1) = uniTreatments(Treatment);
-        TempData.medianTau(Treatment,1) = medianTau;
-        TempData.stdTau(Treatment,1) = stdTau;
-    end
-    TempData;
-    Output_Data(Prev_Tau_Count+1:Prev_Tau_Count+size(TempData,1),:) = TempData;
-    Prev_Tau_Count = size(TempData,1) + Prev_Tau_Count;
-end
-
-toDelete = cell2mat(Tau_Total.Slope) < 0;
-Tau_Total(toDelete,:) = [];
-size(Tau_Total)
+%% Grouping all Tau Data -------------------------------
+% Prev_Tau_Count = 0;
+% for Expression_Line = 1:size(uniExpression)
+%
+%
+%
+%     uniTreatments = unique(Tau_Total.Treatment(contains((Tau_Total.Expression),char(uniExpression(Expression_Line)))),'stable');
+%     string(uniExpression(Expression_Line))
+%     for Treatment = 1:size(uniTreatments)
+%
+%         medianTau = median(cell2mat(Tau_Total.Slope(strcmp((Tau_Total.Expression),char(uniExpression(Expression_Line)))...
+%             & strcmp((Tau_Total.Treatment),char(uniTreatments(Treatment))),:)));
+%         stdTau = std(cell2mat(Tau_Total.Slope(strcmp((Tau_Total.Expression),char(uniExpression(Expression_Line)))...
+%             & strcmp((Tau_Total.Treatment),char(uniTreatments(Treatment))),:)));
+%         TempData.Expression(Treatment,1) =  string(uniExpression(Expression_Line));
+%         TempData.Treatment(Treatment,1) = uniTreatments(Treatment);
+%         TempData.medianTau(Treatment,1) = medianTau;
+%         TempData.stdTau(Treatment,1) = stdTau;
+%     end
+%     TempData;
+%     Output_Data(Prev_Tau_Count+1:Prev_Tau_Count+size(TempData,1),:) = TempData;
+%     Prev_Tau_Count = size(TempData,1) + Prev_Tau_Count;
+% end
+%
+% toDelete = cell2mat(Tau_Total.Slope) < 0;
+% Tau_Total(toDelete,:) = [];
+% size(Tau_Total)
+%%--------------------------------------------------------------
 
 % for Expression_Line = 1:size(uniExpression)
 %     figure(); hold on;
@@ -201,10 +189,31 @@ size(Tau_Total)
 % end
 %------------------------------------------------------------------
 
-% --------------- Scatter Tau ---------------------------------
+% ------------------------------------------------------ Scatter Tau -------------------------------------------------------------
 
 for Expression = 1:size(uniExpression,1)
-    Temp_Total_uniExp = unique(Tau_Total.Exp_Name((contains(cell(Tau_Total.Exp_Name),cellstr(uniExpression(Expression)),'IgnoreCase',true))));
+    
+    
+    Temp_Field_Names = Known_Field_Names((contains(Known_Field_Names,uniExpression(Expression),'IgnoreCase',true)));
+    headers = {'Exp_Name' 'Expression' 'CellLine' 'Treatment' 'Slope' 'SlopeInverse' 'RSQ'};
+    empty_data = cell(1,7);
+    Tau_Total = cell2table(empty_data);
+    Tau_Total.Properties.VariableNames = headers;
+    start = 0;
+    
+    for Field_Name = 1:size(Temp_Field_Names,1)
+        
+        Temp_Data_Table = table();
+        Temp_Data_Table = DataStructure.(char(Temp_Field_Names(Field_Name))).('Tau');
+        
+        %         Tau_Total= cell2table(~,'VariableNames',Temp_Data_Table.Properties.VariableNames)
+        %         if ~(ismember(Temp_Data_Table,Tau_Total))
+        Tau_Total(start+1:start+size(Temp_Data_Table,1),:)  = Temp_Data_Table;
+        %         end
+        start = start+size(Temp_Data_Table,1);
+    end
+    
+        Temp_Total_uniExp = unique(Tau_Total.Exp_Name((contains(cell(Tau_Total.Exp_Name),cellstr(uniExpression(Expression)),'IgnoreCase',true))));
     for drug = 1:size(unique_Treatments,1)
         fig = figure();hold on;
         count = 0;
@@ -242,10 +251,9 @@ for Expression = 1:size(uniExpression,1)
         
     end
 end
-% --------------------------------------------------------------
+% --------------------------------------------------------------------------------------------------------------------------------
 
 system('taskkill /F /IM EXCEL.EXE');
 delete(gcp('nocreate')) %Shuts down parrallel pool
 toc
 % clear
-

@@ -13,7 +13,7 @@ end
 % [uniTreat ,~] = listdlg('PromptString','Select which Treatments you wish to analyze.','SelectionMode','multiple','ListString',Format_Data.Treatment,'ListSize',[250 250]);
 uniTreat = 1:size(Format_Data_Input.Treatment,1);
 % dlgTitle    = 'User Question'; dlgQuestion = 'Do you wish to visualize via plots?'; choice = questdlg(dlgQuestion,dlgTitle,'Yes','No', 'Yes');
-choice = 'No'
+choice = 'Yes'
 %% Extracts Unique Drugs
 Treats = Format_Data_Input.Treatment;
 RegEx = '(\d+\s\w+\s\w+|\d+.\d+\s\w+\s\w+|\w+)\s[+]\s(\d+\s\w+/\w+\s\w+|\w+\s\w+)'
@@ -59,7 +59,48 @@ if string(choice) == 'Yes'
     %     hold off;
     % ------------------------------------------------------------------------
     
-    figure(); counter = 0; start = 0; last = 2;
+    % ----------------------------- Plot for Exponetial Growth Curve -------------------------------------------------------------
+    fig = figure(); counter = 0; start = 0; last = 2;
+    for treat = 1:size(Unique_Drug,1)
+        counter = counter+1;
+        subplot(2,5,counter);hold on;
+        x = str2double(Time_Points);
+        y = (cellfun(@str2num,(table2cell(Format_Data_Input(treat+start:treat+last,2:size(Format_Data_Input,2)))')));
+        char(Unique_Drug(treat))
+        count = 1;
+        for value = 1:size(y,2)
+            temp_y = y(:,value)
+            [curvefit,gof] = fit(x,y(:,value),'exp1');
+             h =  plot (x,temp_y,'o')
+%               set(gca, 'ColorOrder', circshift(get(gca, 'ColorOrder'), numel(h)))
+              set(gca,'ColorOrderIndex',count)
+              h = plot(curvefit, '--')
+              set(get(get(h,'Annotation'),'LegendInformation'),'IconDisplayStyle','off'); 
+              count = count+1
+              set(gca,'ColorOrderIndex',count)
+        end
+        hold off;
+        title(char(Unique_Drug(treat)))
+        start = start+2; last = last+2; 
+        
+        legend(Unique_Co_Drug)
+    end
+    suptitle(['Exponential Cell Number of ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date)])
+    hold off;
+    
+    idcs   = strfind(Excel_Path,'\');
+    Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\Exponetial Cell Number'];
+    if exist(Save_Path, 'dir')~=7
+        disp("Making Directory Graphs to store figures in.")
+        mkdir (Save_Path)
+    end
+    Save_Path_Name = [Save_Path '\' 'Exponential Cell Number of ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date) '.fig'];
+    saveas(fig,Save_Path_Name)
+    clearvars fig counter start last treat x y curvefit gof
+    % ----------------------------------------------------------------------------------------------------------------------------
+    
+    % ----------------------------- Plot for Exponetial Growth Curve -------------------------------------------------------------
+    fig = figure(); counter = 0; start = 0; last = 2;
     for treat = 1:size(Unique_Drug,1)
         counter = counter+1;
         subplot(2,5,counter);hold on;
@@ -78,7 +119,17 @@ if string(choice) == 'Yes'
         legend(Unique_Co_Drug)
    
     end
-    suptitle(['Log2 Cell Number of ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date)])    
+    suptitle(['Log2 Cell Number of ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date)])
+    hold off;
+    idcs   = strfind(Excel_Path,'\');
+    Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\Log2 Cell Number'];
+    if exist(Save_Path, 'dir')~=7
+        disp("Making Directory Graphs to store figures in.")
+        mkdir (Save_Path)
+    end
+    Save_Path_Name = [Save_Path '\' 'Log2 Cell Number of ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date) '.fig'];
+    saveas(fig,Save_Path_Name)
+    % ----------------------------------------------------------------------------------------------------------------------------    
 end
 %%
 % %---------------------------------Previous Linear Fit Testing---------------------------------------------------------------
@@ -139,7 +190,7 @@ end
 % Tau_Total(Prev_Tau_Count+1:Prev_Tau_Count+size(Tau,1),:) = Tau;
 % clearvars uniTreat data Format_Data_Input Time_Points
 % %-------------------------------------------------------------------------------------------------------------------------------
-%% Least Square Fit
+%% -----------------------------------------Least Square Fit----------------------------------------------------------------------
 x = str2double(Time_Points);
 fig = figure(); hold on; counter = 0;start = 0; last = 2;idx = 0; Tau = table();
 for i = 1:size(Unique_Drug,1)
@@ -191,5 +242,5 @@ hold off;
  end
  Save_Path_Name = [Save_Path '\' 'Linear Square Fit ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date) '.fig'];
  saveas(fig,Save_Path_Name)
-%%
+%% -------------------------------------------------------------------------------------------------------------------------------
 end
