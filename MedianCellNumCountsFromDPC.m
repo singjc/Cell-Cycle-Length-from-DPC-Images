@@ -103,6 +103,27 @@ if isempty(uniExp) == 0
         save('DataStructure.mat', 'DataStructure')
         clearvars PlateMap
     end
+<<<<<<< HEAD
+=======
+    
+    Exp_Name = char(unique(TempData.Exp_Name));
+    ExpressionStr = char(unique(TempData.Expression));
+    CellLine = char(unique(TempData.CellLine));
+    Date = unique(string(TempData.Date));
+    Format_Data_Input = DataStructure.(FieldName).('CellNumber');
+    
+    [Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,ExpressionStr,CellLine,Date,Format_Data_Input,Excel_Path);
+    
+    DataStructure.(FieldName).('Tau') = Tau;
+    
+    Prev_Tau_Count = size(Tau_Total,1);
+    Tau_Total(Prev_Tau_Count+1:Prev_Tau_Count+size(Tau,1),:) = Tau;
+    
+    %     writetable(Format_Data,filename,'sheet',1)
+    Tau;
+    save('DataStructure.mat', 'DataStructure')
+    clearvars PlateMap
+>>>>>>> LeastSquaresFit
 end
 clearvars filename Prev_Tau_Count TempData
 % filename = strcat(Storage_Path,'\','Tau_Total', '.xlsx');
@@ -182,27 +203,10 @@ size(Tau_Total)
 
 % --------------- Scatter Tau ---------------------------------
 
-% for Expression = 1:size(uniExpression,1)
-% for Exp = 1:size(Total_uniExp,1)
-%     clearvars x y idx
-%     temp_uniTreatments = unique(Tau_Total.Treatment(contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))),'stable');
-%     for experiment = 1:size(uniExp,2)
-%         for idx = 1:size(temp_uniTreatments,1)
-%             x = categorical(temp_uniTreatments(idx))
-%             y = cell2mat(Tau_Total.SlopeInverse(contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))...
-%                 & contains(cell(Tau_Total.Treatment),cell(temp_uniTreatments(idx)))...
-%                 & contains(cell(Tau_Total.Exp_Name),cell(Total_uniExp(experiment)))))
-%
-%             scatter(x,y)
-%         end
-%     end
-% end
-% end
-
 for Expression = 1:size(uniExpression,1)
     Temp_Total_uniExp = unique(Tau_Total.Exp_Name((contains(cell(Tau_Total.Exp_Name),cellstr(uniExpression(Expression)),'IgnoreCase',true))));
     for drug = 1:size(unique_Treatments,1)
-        figure();hold on;
+        fig = figure();hold on;
         count = 0;
         for experiment = 1:size(Temp_Total_uniExp)
             count = count +1;
@@ -226,6 +230,16 @@ for Expression = 1:size(uniExpression,1)
         legend (temp_legend)
         ylabel('Cell Cycle Length (1/\tau)');
         clearvars temp_legend
+        
+        idcs   = strfind(Excel_Path,'\');
+        Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\Scatter Plots of Cell Cycle Length'];
+        if exist(Save_Path, 'dir')~=7
+            disp("Making Directory Graphs to store figures in.")
+            mkdir (Save_Path)
+        end
+        Save_Path_Name = [Save_Path '\' 'Cell Cycle Length for ' char((uniExpression(Expression))) ' ' char(unique_Treatments(drug)) '.fig'];
+        saveas(fig,Save_Path_Name)
+        
     end
 end
 % --------------------------------------------------------------
