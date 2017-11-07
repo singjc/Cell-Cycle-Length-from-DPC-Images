@@ -1,5 +1,5 @@
 % Function to plot time-point DPC cell count data
-function [yCalc3,Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,ExpressionStr,CellLine,Date,Format_Data_Input)
+function [Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,ExpressionStr,CellLine,Date,Format_Data_Input,Excel_Path)
 
 %% Extracts Time Points
 TP_Headers = Format_Data_Input.Properties.VariableNames(2:end)';
@@ -141,7 +141,7 @@ end
 % %-------------------------------------------------------------------------------------------------------------------------------
 %% Least Square Fit
 x = str2double(Time_Points);
-figure(); hold on; counter = 0;start = 0; last = 2;idx = 0; Tau = table();
+fig = figure(); hold on; counter = 0;start = 0; last = 2;idx = 0; Tau = table();
 for i = 1:size(Unique_Drug,1)
     
     y = log2(cellfun(@str2num,(table2cell(Format_Data_Input(uniTreat(i+start:i+last),2:size(Format_Data_Input,2)))')));
@@ -182,5 +182,14 @@ end
 
 suptitle(['Linear Square Fit ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date)])
 hold off;
+
+ idcs   = strfind(Excel_Path,'\');
+ Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\Least Squares Fit'];
+ if exist(Save_Path, 'dir')~=7
+     disp("Making Directory Graphs to store figures in.")
+     mkdir (Save_Path)
+ end
+ Save_Path_Name = [Save_Path '\' 'Linear Square Fit ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date) '.fig'];
+ saveas(fig,Save_Path_Name)
 %%
 end

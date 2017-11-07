@@ -1,5 +1,5 @@
 % Function to plot time-point DPC cell count data
-function [yCalc3,Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,ExpressionStr,CellLine,Date,Format_Data_Input)
+function [Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,ExpressionStr,CellLine,Date,Format_Data_Input,Excel_Path)
 
 %% Extracts Time Points
 TP_Headers = Format_Data_Input.Properties.VariableNames(2:end)';
@@ -15,7 +15,6 @@ uniTreat = 1:size(Format_Data_Input.Treatment,1);
 % dlgTitle    = 'User Question'; dlgQuestion = 'Do you wish to visualize via plots?'; choice = questdlg(dlgQuestion,dlgTitle,'Yes','No', 'Yes');
 choice = 'No'
 %% Extracts Unique Drugs
-
 Treats = Format_Data_Input.Treatment;
 RegEx = '(\d+\s\w+\s\w+|\d+.\d+\s\w+\s\w+|\w+)\s[+]\s(\d+\s\w+/\w+\s\w+|\w+\s\w+)'
 Tokens2 = regexp(Treats,RegEx,'tokens');
@@ -29,8 +28,7 @@ Unique_Co_Drug = unique(temp_Co_Drug,'stable');
 
 %% Section for plotting growth rate for each individual drug
 if string(choice) == 'Yes'
-    
-    
+  
     %     --------------------------------------------- OLD ------------------
     %     [Trend_Line,~] = listdlg('PromptString','Select which Treatments you wish to have a trendline for.','SelectionMode','multiple','ListString',Format_Data.Treatment(uniTreat),'ListSize',[300 250]); %Prompts user what plots they want
     %     Colour_Range = {'[.5 .5 .5]' '[1 .4 .4]' '[.2 .4 1]' '[.3 .8 .3]' '[.6 .3 .4]' '[.9 .8 .9]' '[0 0 0]' '[0 0 1]' '[0 1 0]' '[1 0 0]' '[1 0 1]' '[1 1 0]' '[.3 .7 .5]' '[.5 0.6 1]' '[.7 .2 .9]' '[1 .2 .7]' '[.2 .9 1]' '[.1 1 .9]'}';
@@ -61,8 +59,6 @@ if string(choice) == 'Yes'
     %     hold off;
     % ------------------------------------------------------------------------
     
-    
-    
     figure(); counter = 0; start = 0; last = 2;
     for treat = 1:size(Unique_Drug,1)
         counter = counter+1;
@@ -78,17 +74,14 @@ if string(choice) == 'Yes'
         end
         hold off;
         title(char(Unique_Drug(treat)))
-        start = start+2; last = last+2;
-        
+        start = start+2; last = last+2; 
         legend(Unique_Co_Drug)
-        
-        
+   
     end
-    suptitle(['Log2 Cell Number of ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date)])
-    
+    suptitle(['Log2 Cell Number of ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date)])    
 end
 %%
-
+% %---------------------------------Previous Linear Fit Testing---------------------------------------------------------------
 % % clearvars count
 % % Tau = table();
 % % count = 1;
@@ -145,7 +138,7 @@ end
 
 % Tau_Total(Prev_Tau_Count+1:Prev_Tau_Count+size(Tau,1),:) = Tau;
 % clearvars uniTreat data Format_Data_Input Time_Points
-
+% %-------------------------------------------------------------------------------------------------------------------------------
 %% Least Square Fit
 x = str2double(Time_Points);
 figure(); hold on; counter = 0;start = 0; last = 2;idx = 0; Tau = table();
@@ -189,6 +182,15 @@ end
 
 suptitle(['Linear Square Fit ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date)])
 hold off;
-%%
 
+ idcs   = strfind(Excel_Path,'\');
+ Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\Least Squares Fit'];
+ 
+ if exist(Save_Path, 'dir')~=7
+     disp("Making Directory Graphs to store figures in.")
+     mkdir (Save_Path)
+ end
+ Save_Path_Name = [Save_Path '\' 'Linear Square Fit ' char(CellLine) ' ' char(ExpressionStr) ' cells ' char(Date) '.m'];
+ saveas(figure(),Save_Path_Name)
+%%
 end
