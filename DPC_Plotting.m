@@ -1,5 +1,5 @@
 % Function to plot time-point DPC cell count data
-function [Non_Avg_Tau,Avg_Tau,Unique_Drug,Unique_Co_Drug] = Plotting2(Exp_Name,ExpressionStr,CellLine,Date,Non_Avg_Data_Input,Format_Data_Input,Excel_Path)
+function [Non_Avg_Tau,Avg_Tau,Unique_Drug,Unique_Co_Drug] = DPC_Plotting(Exp_Name,ExpressionStr,CellLine,Date,Non_Avg_Data_Input,Format_Data_Input,Excel_Path)
 reshape_Expression = (reshape(ExpressionStr,[1 size(ExpressionStr,1)]));
 %% Extracts Time Points
 TP_Headers = Format_Data_Input.Properties.VariableNames(2:end)';
@@ -27,7 +27,10 @@ for tok2 = 1:size(Tokens2,1)
     Format_Data_Input.Drug2(tok2,1) = cellstr(Tokens2{tok2,1}{1,1}{1,2});
     temp_Co_Drug(tok2,1) = cellstr(Tokens2{tok2,1}{1,1}{1,2});
 end
-Format_Data_Input = [Format_Data_Input.Treatment Format_Data_Input.Drug1 Format
+Format_Data_Input = [Format_Data_Input.Treatment Format_Data_Input.Drug1 Format_Data_Input.Drug2 Format_Data_Input(:,2:size(Format_Data_Input,2)-2)]
+Format_Data_Input.Properties.VariableNames{1} = 'Treatment';
+Format_Data_Input.Properties.VariableNames{2} = 'Drug1';
+Format_Data_Input.Properties.VariableNames{3} = 'Drug2';
 Unique_Drug = unique(temp_Drug, 'stable');
 Unique_Co_Drug = unique(temp_Co_Drug,'stable');
 %%
@@ -272,7 +275,7 @@ x = str2double(Time_Points);
 fig = figure(); hold on; counter = 0;start = 0; last = 2;idx = 0; Avg_Tau = table();
 for i = 1:size(Unique_Drug,1)
     
-    y = log2(cellfun(@str2num,(table2cell(Format_Data_Input(strcmp(cellstr(Format_Data_Input.Drug1),Unique_Drug(i)),2:size(Format_Data_Input,2)))')));
+    y = log2(cellfun(@str2num,(table2cell(Format_Data_Input(strcmp(cellstr(Format_Data_Input.Drug1),Unique_Drug(i)),4:size(Format_Data_Input,2)))')));
     f = fittype('m*x + b');
     counter = counter+1;
     subplot(subplot_row,subplot_col,counter);
