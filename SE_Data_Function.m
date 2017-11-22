@@ -29,7 +29,7 @@ for unique_experiment = 1:size(unique(Desired_Exp_Data.Exp_Name,'stable'),1)
     Unique_Co_Drug = unique(temp_Co_Drug,'stable');
     %%
     
-    Temp_Data = Desired_Exp_Data(contains(Desired_Exp_Data.Exp_Name,Desired_Exp_Data.Exp_Name(unique_experiment)),:);
+    Temp_Data = Desired_Exp_Data(contains(Desired_Exp_Data.Exp_Name,Desired_Exp_Data.Exp_Name(unique_experiment))&contains(Desired_Exp_Data.Imaging_Type,'SE'),:);
     
     FieldName = ['Dataset_' cell2mat(Desired_Exp_Data.Exp_Name(unique_experiment))];
     for cw_Time_Point = 1:nnz(contains(Desired_Exp_Data.PathToDataset,Desired_Exp_Data.Exp_Name(unique_experiment)))
