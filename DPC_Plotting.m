@@ -5,6 +5,7 @@ reshape_Expression = (reshape(ExpressionStr,[1 size(ExpressionStr,1)]));
 TP_Headers = Format_Data_Input.Properties.VariableNames(2:end)';
 MatchExpression = 'TP_(\d+)_Hr';
 Tokens = regexp(TP_Headers,MatchExpression,'tokens');
+Time_Points = cell(size(Tokens,1),1);
 for tok = 1:size(Tokens,1)
     Time_Points(tok,1) = Tokens{tok,1}{1,1};
 end
@@ -52,51 +53,51 @@ if string(choice) == 'Yes'
         counter = counter+1;
         subplot(subplot_row,subplot_col,counter);hold on;
         x = str2double(Time_Points);
-        y = (cellfun(@str2num,(table2cell(Format_Data_Input(contains(cellstr(Format_Data_Input.Treatment),Unique_Drug(treat)),4:size(Format_Data_Input,2)))')));
+        y = (cellfun(@str2num,(table2cell(Format_Data_Input(strcmp((Format_Data_Input.Drug1),Unique_Drug(treat)),4:size(Format_Data_Input,2)))')));
         %         char(Unique_Drug(treat))
         count = 1;
         for value = 1:size(y,2)
             temp_y = y(:,value);
             [curvefit,gof] = fit(x,y(:,value),'exp1');
-            h =  plot (x,temp_y,'o');
-            %               set(gca, 'ColorOrder', circshift(get(gca, 'ColorOrder'), numel(h)))
+            plot (x,temp_y,'o');
             set(gca,'ColorOrderIndex',count)
             h2 = plot(curvefit, '--');
             hasbehavior(h2,'legend',false)
-            set(get(get(h2,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-            legend(h2,'off')
-            count = count+1;
+            legend(h2,'visible','off')
+            count = count+1;            
+            hdle=findobj(gcf,'type','legend'); %Stores a handle for legend objects
+            delete(hdle) %Deletes legend objects to prevent them from popping up
             
             set(gca,'ColorOrderIndex',count)
         end
         hold off;
         title(char(Unique_Drug(treat)))
         start = start+2; last = last+2;
-%         if treat == 1
-%             hLeg = legend(Unique_Co_Drug);
-%         else
-%             set(hLeg,'visible','off') %Makes Legend invisible
-%         end
+
     end
     
     suptitle(['Exponential Cell Number of ' char(CellLine) ' ' char({sprintf('%s;',reshape_Expression{:})}) ' cells ' char(Date)])
-    [ax1,h1]=suplabel('log2 Cell Number');
+    [ax1,h1]=suplabel('Cell Number','y');
     set(h1,'FontSize',15)
-    [ax2,h2]=suplabel('Time(Hours)','y');
+    [ax2,h2]=suplabel('Time(Hours)');
     set(h2,'FontSize',15)
-%     legend(Unique_Co_Drug)
-
     hold off;
+
+    fileName = ['Exponential Cell Number of ' char(CellLine) ' ' char({sprintf('%s;',reshape_Expression{:})}) ' cells ' char(Date) '.fig'];
+    subfolder = 'DPC Data\Exponetial Cell Number\';
+    [Save_Path] = saveFigure(Excel_Path,fileName,subfolder,fig);
+    clearvars fileName subfolder
     
-    idcs   = strfind(Excel_Path,'\');
-    Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\DPC Data\Exponetial Cell Number'];
-    if exist(Save_Path, 'dir')~=7
-        disp(string('Making Directory Graphs to store figures in.'))
-        mkdir (Save_Path)
+    figHandle = figure();hold on;
+    for leg_item = 1:size(Unique_Co_Drug,1)
+        plot(leg_item, leg_item)
+        legHandle = legend(Unique_Co_Drug,'Interpreter', 'none');
     end
-    Save_Path_Name = [Save_Path '\' 'Exponential Cell Number of ' char(CellLine) ' ' char({sprintf('%s;',reshape_Expression{:})}) ' cells ' char(Date) '.fig'];
-    saveas(fig,Save_Path_Name)
-    clearvars fig counter start last treat x y curvefit gof
+    fileName = [Save_Path 'Legend for Exponential Cell Number of ' char(CellLine) ' ' char({sprintf('%s;',reshape_Expression{:})}) ' cells ' char(Date)];
+    fileType = 'png';
+    saveLegendToImage(figHandle, legHandle, fileName, fileType)
+    
+    clearvars fig counter start last treat x y curvefit gof fileName fileType figHandle Save_Path
     % ----------------------------------------------------------------------------------------------------------------------------
     
     % ----------------------------- Plot for log Growth Curve -------------------------------------------------------------
@@ -105,13 +106,15 @@ if string(choice) == 'Yes'
         counter = counter+1;
         subplot(subplot_row,subplot_col,counter);hold on;
         x = str2double(Time_Points);
-        y = log2(cellfun(@str2num,(table2cell(Format_Data_Input(contains(cellstr(Format_Data_Input.Treatment),Unique_Drug(treat)),4:size(Format_Data_Input,2)))')));
+        y = log2(cellfun(@str2num,(table2cell(Format_Data_Input(strcmp((Format_Data_Input.Drug1),Unique_Drug(treat)),4:size(Format_Data_Input,2)))')));
         char(Unique_Drug(treat))
         for value = 1:size(y,2)
             %             y(:,value)
             [curvefit,gof] = fit(x,y(:,value),'exp1');
             plot (x,y)
             %             plot(curvefit, '--')
+            hdle=findobj(gcf,'type','legend'); %Stores a handle for legend objects
+            delete(hdle) %Deletes legend objects to prevent them from popping up
         end
         hold off;
         title(char(Unique_Drug(treat)))
@@ -121,23 +124,29 @@ if string(choice) == 'Yes'
 %         end
     end
     suptitle(['Log2 Cell Number of ' char(CellLine) ' ' char({sprintf('%s;',reshape_Expression{:})}) ' cells ' char(Date)])
-    [ax1,h1]=suplabel('log2 Cell Number');
+    [ax1,h1]=suplabel('log2 Cell Number','y');
     set(h1,'FontSize',15)
-    [ax2,h2]=suplabel('Time(Hours)','y');
+    [ax2,h2]=suplabel('Time(Hours)');
     set(h2,'FontSize',15)
-    legend(Unique_Co_Drug)
     hold off;
-    idcs   = strfind(Excel_Path,'\');
-    Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\DPC Data\Log2 Cell Number'];
-    if exist(Save_Path, 'dir')~=7
-        disp(string('Making Directory Graphs to store figures in.'))
-        mkdir (Save_Path)
+    
+    fileName = ['Log2 Cell Number of ' char(CellLine) ' ' char({sprintf('%s;',reshape_Expression{:})}) ' cells ' char(Date) '.fig'];
+    subfolder = 'DPC Data\Log2 Cell Number\';
+    [Save_Path] = saveFigure(Excel_Path,fileName,subfolder,fig);
+    clearvars fileName subfolder
+    
+    figHandle = figure();hold on;
+    for leg_item = 1:size(Unique_Co_Drug,1)
+        plot(leg_item, leg_item)
+        legHandle = legend(Unique_Co_Drug,'Interpreter', 'none');
     end
-    Save_Path_Name = [Save_Path '\' 'Log2 Cell Number of ' char(CellLine) ' ' char({sprintf('%s;',reshape_Expression{:})}) ' cells ' char(Date) '.fig'];
-    saveas(fig,Save_Path_Name)
+    fileName = [Save_Path 'Legend for Log2 Cell Number of ' char(CellLine) ' ' char({sprintf('%s;',reshape_Expression{:})}) ' cells ' char(Date)];
+    fileType = 'png';
+    saveLegendToImage(figHandle, legHandle, fileName, fileType)
+    
     % ----------------------------------------------------------------------------------------------------------------------------
 end
-clearvars h
+clearvars fileName fileType figHandle Save_Path
 %%
 % %---------------------------------Previous Linear Fit Testing---------------------------------------------------------------
 % % clearvars count
@@ -213,11 +222,20 @@ for i = 1:size(Non_Avg_Data_Input,1)
         m = coeffvalues(fit3);
         
         Non_Avg_Tau.Exp_Name(i+idx,1) = cellstr(Exp_Name);
-        for express = 1:size(ExpressionStr,1)
-            if contains(table2cell(Non_Avg_Data_Input(Non_Avg_Data_uniTreat(i+idx),1)),ExpressionStr(express))
-                Non_Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr(express));
-            else
-                Non_Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr(express));
+        if size(ExpressionStr,1) == 1
+            
+            Non_Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr);
+            cellstr(ExpressionStr)
+        else
+            for express = 1:size(ExpressionStr,1)
+                if contains(table2cell(Non_Avg_Data_Input(Non_Avg_Data_uniTreat(i+idx),1)),ExpressionStr(express))
+                    Non_Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr(express));
+                    cellstr(ExpressionStr(express))
+                    
+                    %             else
+                    %                 Non_Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr(express));
+                    %                 cellstr(ExpressionStr(express))
+                end
             end
         end
         Non_Avg_Tau.CellLine(i+idx,1) = cellstr(CellLine);
@@ -233,11 +251,16 @@ for i = 1:size(Non_Avg_Data_Input,1)
     last = last+2;
 end
 
-
-    Avg_Control = median(cell2mat((Non_Avg_Tau.SlopeInverse(contains(Non_Avg_Tau.Treatment,'DMSO') & contains(Non_Avg_Tau.Treatment,'No doxycyclin')))))
-
-    Non_Avg_Tau.Normalized = num2cell(cell2mat(Non_Avg_Tau.SlopeInverse)/Avg_Control)
-
+    if size(ExpressionStr,1) > 1
+        for express = 1:size(ExpressionStr,1)
+            Avg_Control = median(cell2mat((Non_Avg_Tau.SlopeInverse((contains(Non_Avg_Tau.Treatment,'DMSO')|contains(Non_Avg_Tau.Treatment,ExpressionStr(express))) & contains(Non_Avg_Tau.Treatment,'No doxycyclin')))));
+            Non_Avg_Tau.Normalized(contains(Non_Avg_Tau.Expression,ExpressionStr(express)),1) = num2cell(cell2mat(Non_Avg_Tau.SlopeInverse(contains(Non_Avg_Tau.Expression,ExpressionStr(express))))/Avg_Control);
+        end
+    else
+        Avg_Control = median(cell2mat((Non_Avg_Tau.SlopeInverse(contains(Non_Avg_Tau.Treatment,'DMSO') & contains(Non_Avg_Tau.Treatment,'No doxycyclin')))));
+        Non_Avg_Tau.Normalized = num2cell(cell2mat(Non_Avg_Tau.SlopeInverse)/Avg_Control);
+    end
+ 
 clearvars i
 %% -------------------------------------------------------------------------------------------------------------------------------
 
@@ -269,13 +292,29 @@ for i = 1:size(Unique_Drug,1)
            
         m = coeffvalues(fit3);
         Avg_Tau.Exp_Name(i+idx,1) = cellstr(Exp_Name);
-        for express = 1:size(ExpressionStr,1)
-            if contains(table2cell(Format_Data_Input(uniTreat(i+idx),1)),ExpressionStr(express))
-                Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr(express));
-            else 
-                Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr(express));
+%         for express = 1:size(ExpressionStr,1)
+%             if contains(table2cell(Format_Data_Input(uniTreat(i+idx),1)),ExpressionStr(express))
+%                 Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr(express));
+%             end
+%         end
+        % Made Changes Here
+        if size(ExpressionStr,1) == 1
+            
+            Non_Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr);
+            cellstr(ExpressionStr)
+        else
+            for express = 1:size(ExpressionStr,1)
+                if contains(table2cell(Non_Avg_Data_Input(Non_Avg_Data_uniTreat(i+idx),1)),ExpressionStr(express))
+                    Non_Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr(express));
+                    cellstr(ExpressionStr(express))
+                    
+                    %             else
+                    %                 Non_Avg_Tau.Expression(i+idx,1) = cellstr(ExpressionStr(express));
+                    %                 cellstr(ExpressionStr(express))
+                end
             end
         end
+        
         Avg_Tau.CellLine(i+idx,1) = cellstr(CellLine);
         Avg_Tau.Treatment(i+idx,1) = table2cell(Format_Data_Input(uniTreat(i+idx),1));
         Avg_Tau.Slope(i+idx,1) = num2cell(m(2));

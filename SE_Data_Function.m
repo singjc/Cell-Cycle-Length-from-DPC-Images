@@ -1,14 +1,19 @@
 function [DataStructure] = SE_Data_Function(Excel_Path,Desired_Exp_Data,DataStructure)
 
-for unique_experiment = 1:size(unique(Desired_Exp_Data.Exp_Name,'stable'),1)
+Relevant_SE_Data = Desired_Exp_Data(contains(Desired_Exp_Data.Imaging_Type,'SE'),:);
+Total_uni_Exp = unique(Relevant_SE_Data.Exp_Name,'stable');
+for unique_experiment = 1:size(Total_uni_Exp,1)
+    
+    Temp_Data = Relevant_SE_Data(contains(Relevant_SE_Data.Exp_Name,Total_uni_Exp(unique_experiment))&contains(Relevant_SE_Data.Imaging_Type,'SE'),:);
+    
     %% Import PlateMap
-    [~, ~, PlateMap] = xlsread(char(Desired_Exp_Data.Plate_Map(1)),char(Desired_Exp_Data.Sheet(1)),char(Desired_Exp_Data.Range(1))); %Stores platemap variables for current unique experiment.
+    [~, ~, PlateMap] = xlsread(char(Temp_Data.Plate_Map(1)),char(Temp_Data.Sheet(1)),char(Temp_Data.Range(1))); %Stores platemap variables for current unique experiment.
     PlateMap = string(PlateMap);
     PlateMap(ismissing(PlateMap)) = '';
     %%
     
     %% Import Drugs
-    [~, ~, Drugs] = xlsread(char(Desired_Exp_Data.Plate_Map(1)),char(Desired_Exp_Data.Sheet2(1))); %Stores platemap variables for current unique experiment.
+    [~, ~, Drugs] = xlsread(char(Temp_Data.Plate_Map(1)),char(Temp_Data.Sheet2(1))); %Stores platemap variables for current unique experiment.
     Drugs = string(Drugs);
     Drugs(ismissing(Drugs)) = '';
     unique_Control = Drugs(contains(Drugs(:,2),'Control'),1);
@@ -17,8 +22,8 @@ for unique_experiment = 1:size(unique(Desired_Exp_Data.Exp_Name,'stable'),1)
     
     %% Extracts Unique Drugs from PlateMap
     PlateMap_uniDrugs = unique(PlateMap,'stable');
-    temp_Drug = cell(size(PlateMap_uniDrugs,1)*size(PlateMap_uniDrugs,2),1)
-    temp_Co_Drug = cell(size(PlateMap_uniDrugs,1)*size(PlateMap_uniDrugs,2),1)
+    temp_Drug = cell(size(PlateMap_uniDrugs,1)*size(PlateMap_uniDrugs,2),1);
+    temp_Co_Drug = cell(size(PlateMap_uniDrugs,1)*size(PlateMap_uniDrugs,2),1);
     RegEx = '(\d+\s\w+\s\w+|\d+.\d+\s\w+\s\w+|\w+)\s[+]\s(\d+\s\w+/\w+\s\w+|\w+\s\w+)';
     Tokens2 = regexp(PlateMap_uniDrugs,RegEx,'tokens');
     for tok2 = 1:size(Tokens2,1)
@@ -29,11 +34,14 @@ for unique_experiment = 1:size(unique(Desired_Exp_Data.Exp_Name,'stable'),1)
     Unique_Co_Drug = unique(temp_Co_Drug,'stable');
     %%
     
-    Temp_Data = Desired_Exp_Data(contains(Desired_Exp_Data.Exp_Name,Desired_Exp_Data.Exp_Name(unique_experiment))&contains(Desired_Exp_Data.Imaging_Type,'SE'),:);
     
-    FieldName = ['Dataset_' cell2mat(Desired_Exp_Data.Exp_Name(unique_experiment))];
-    for cw_Time_Point = 1:nnz(contains(Desired_Exp_Data.PathToDataset,Desired_Exp_Data.Exp_Name(unique_experiment)))
+    Total_uni_Exp(unique_experiment)
+    
+    for cw_Time_Point = 1:nnz(contains(Temp_Data.Exp_Name,Total_uni_Exp(unique_experiment)))
         
+        
+        
+        FieldName = ['Dataset_' cell2mat(Temp_Data.Exp_Name(contains(Temp_Data.Exp_Name(1),Total_uni_Exp(unique_experiment)))) '_' num2str(Temp_Data.Time_Point(cw_Time_Point)) 'Hrs']
         path = Temp_Data.PathToDataset(cw_Time_Point); File = 'ResultTable.mat'; load ([char(path) '\' File]); %Loading ResultTable data.
         
         chDNA=1; chGEM = 2; chSE=3;
@@ -56,12 +64,12 @@ for unique_experiment = 1:size(unique(Desired_Exp_Data.Exp_Name,'stable'),1)
             lGem = ResultTable.lGem(FCells);
             [idxEG1,idxLG1,idxG1S,idxS,idxG2] = FindStages_VarGem(DNA,lGem,FieldName,'NOimage');
         
-            ResultTable.EG1(FCells(idxEG1))=1;
-            ResultTable.LG1(FCells(idxLG1))=1;
-            ResultTable.G1S(FCells(idxG1S))=1;
-            ResultTable.S(FCells(idxS))=1;
-            ResultTable.G2(FCells(idxG2))=1;
-            ResultTable.Reject(FCells(~(idxEG1|idxLG1|idxG1S|idxS|idxG2)))=1; %Discard cells that have abnormal DNA/geminin levels- probably dead or segmentation errors. We are also discarding mitotics here.
+            ResultTable.EG1(FCells(idxEG1(:,1)))=1; %Changed this, added (:,1) for some reason it is showing two coloumns, not sure why.
+            ResultTable.LG1(FCells(idxLG1(:,1)))=1;
+            ResultTable.G1S(FCells(idxG1S(:,1)))=1;
+            ResultTable.S(FCells(idxS(:,1)))=1;
+            ResultTable.G2(FCells(idxG2(:,1)))=1;
+            ResultTable.Reject(FCells(~(idxEG1(:,1)|idxLG1(:,1)|idxG1S(:,1)|idxS(:,1)|idxG2(:,1))))=1; %Discard cells that have abnormal DNA/geminin levels- probably dead or segmentation errors. We are also discarding mitotics here.
             keepers=FCells(ResultTable.Reject(FCells)==0);
             ResultTable.Keep=false(size(ResultTable.lGem)); ResultTable.Keep(keepers)=true;  
 %             figure(1000);hold on;plot(DNA(logical(ResultTable.Reject(FCells))),lGem(logical(ResultTable.Reject(FCells))),'ko')

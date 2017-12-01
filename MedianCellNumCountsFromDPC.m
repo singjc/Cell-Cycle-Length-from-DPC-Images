@@ -3,7 +3,7 @@ parpool
 tic
 warning off
 
-[Excel_File,Excel_Path,Filer_Index] = uigetfile('*.xlsx','Select the Excel Data File'); %Prompts user for the excel file that contains their data.
+[Excel_File,Excel_Path,Filer_Index] = uigetfile('C:\*.xlsx','Select the Excel Data File'); %Prompts user for the excel file that contains their data.
 data = readtable([char(Excel_Path) char(Excel_File)]); %Reads excel file and stores information as a table variable.
 Total_uniExp = unique(data.Exp_Name,'stable'); %Stores unique experiments, preserving the order.
 [uniExp,uniExp_Ok] = listdlg('PromptString','Select which experiments you wish to analyze.','SelectionMode','multiple','ListString',Total_uniExp,'ListSize',[300 200],'CancelString','None'); %Prompts user what plots they want
@@ -20,9 +20,9 @@ Desired_Exp_Data = Temp_Selected_Data(contains(Temp_Selected_Data.Exp_Name,Desir
 %% Determine if there is a previously stored DataStructure containing all user Data.
 Known_Field_Names = ''; %Create empty storage variable for total known field names in DataStructure.
 DataStructFile = java.io.File([pwd '\DataStructure.mat']); %Path name to DataStructure.m file.
-if DataStructFile.exists() == 1 %If DataStructure.m file is in the path specified by DataStructFile, then if statement holds true. 
+if DataStructFile.exists() == 1 %If DataStructure.m file is in the path specified by DataStructFile, then if statement holds true.
     dlgTitle    = 'User Question'; dlgQuestion = 'Do you want to use and build on the previously used Data?'; choice = questdlg(dlgQuestion,dlgTitle,'Yes','No', 'Yes'); %Prompts user if they want to continue using the old DataStructure File, or start a new DataStructure File. Default answer is yes.
-    Known_Field_Names = fieldnames(DataStructure)
+    
     if string(choice) == string('No') %If user does not want to use the old DataStructure.
         dlgTitle    = 'User Question'; dlgQuestion = 'Do you want to delete the old Data and start anew?'; choice2 = questdlg(dlgQuestion,dlgTitle,'Yes','No', 'Yes'); %Prompts user if they want to delete the old DataStructure.
         if string(choice2) == string('Yes')
@@ -40,6 +40,7 @@ if DataStructFile.exists() == 1 %If DataStructure.m file is in the path specifie
         end
     else
         load([pwd '\DataStructure.mat']) %Loads DataStructure.m file to workspace.
+        Known_Field_Names = fieldnames(DataStructure);
     end
 else
     FieldName = '';
@@ -49,6 +50,10 @@ else
     end
 end
 %%
+
+if contains(fieldnames(DataStructure),'Expressions')==0
+    DataStructure.('Expressions') = {};
+end
 
 if any(contains(Image_Analysis_Choice,string('DPC')))
     [DataStructure] = DPC_Data_Function(Excel_Path,Desired_Exp_Data,DataStructure,Image_Analysis_Choice);
@@ -63,88 +68,81 @@ clearvars filename Prev_Tau_Count TempData
 % Output_Data = table();
 % TempData = table();
 
-
 %% Obtaining all unique inducible expression
-uniExpression = {};
-DPC_Known_Field_Names = fieldnames(DataStructure.('DPC'))
-for Field_Name = 1:size(DPC_Known_Field_Names,1)
-    Inducible_Expression = unique(DataStructure.('DPC').(char(DPC_Known_Field_Names(Field_Name))).('Avg_Tau').Expression,'stable');
-    if ~(ismember(Inducible_Expression,uniExpression))
-        uniExpression {end+1,1} = char(Inducible_Expression);
-    end
-end
+uniExpression = DataStructure.('Expressions');
 %%
 
 %% Scatter Plots For Tau
 % ------------------------------------------------------ Scatter Tau -------------------------------------------------------------
-
-for Expression = 1:size(uniExpression,1)
-    
-    Temp_Field_Names = Known_Field_Names((contains(Known_Field_Names,uniExpression(Expression),'IgnoreCase',true)));
-    headers = {'Exp_Name' 'Expression' 'CellLine' 'Treatment' 'Slope' 'SlopeInverse' 'RSQ'};
-    empty_data = cell(1,7);
-    Tau_Total = cell2table(empty_data);
-    Tau_Total.Properties.VariableNames = headers;
-    start = 0;
-    for Field_Name = 1:size(Temp_Field_Names,1)
+no = 0;
+if no == 1
+    for Expression = 1:size(uniExpression,1)
         
-        Temp_Data_Table = table();
-        Temp_Data_Table = DataStructure.('DPC').(char(Temp_Field_Names(Field_Name))).('Avg_Tau');
-        
-        %         Tau_Total= cell2table(~,'VariableNames',Temp_Data_Table.Properties.VariableNames)
-        %         if ~(ismember(Temp_Data_Table,Tau_Total))
-        Tau_Total(start+1:start+size(Temp_Data_Table,1),:)  = Temp_Data_Table;
-        %         end
-        start = start+size(Temp_Data_Table,1);
-    end
-    
-    Temp_Total_uniExp = unique(Tau_Total.Exp_Name((contains(cell(Tau_Total.Exp_Name),cellstr(uniExpression(Expression)),'IgnoreCase',true))));
-    for drug = 1:size(unique_Treatments,1)
-        fig = figure();hold on;
-        count = 0;
-        for experiment = 1:size(Temp_Total_uniExp)
-            count = count +1;
-            x = categorical(Tau_Total.Treatment((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
-                &(contains(cell(Tau_Total.Treatment),cellstr(unique_Treatments(drug)))...
-                |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
-                & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))));
-            if isempty(x); continue; end
-            x = reordercats(x,Tau_Total.Treatment((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
-                &(contains(cell(Tau_Total.Treatment),cellstr(unique_Treatments(drug)))...
-                |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
-                & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))));
-            y = cell2mat(Tau_Total.SlopeInverse((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
-                &(contains(cell(Tau_Total.Treatment),cellstr(unique_Treatments(drug)))...
-                |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
-                & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))));
+        Temp_Field_Names = Known_Field_Names((contains(Known_Field_Names,uniExpression(Expression),'IgnoreCase',true)));
+        headers = {'Exp_Name' 'Expression' 'CellLine' 'Treatment' 'Slope' 'SlopeInverse' 'RSQ'};
+        empty_data = cell(1,7);
+        Tau_Total = cell2table(empty_data);
+        Tau_Total.Properties.VariableNames = headers;
+        start = 0;
+        for Field_Name = 1:size(Temp_Field_Names,1)
             
-            scatter(x,y)
-            temp_legend(count,1) = unique((Tau_Total.Exp_Name((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
-                &(contains(cell(Tau_Total.Treatment),cellstr(unique_Treatments(drug)))...
-                |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
-                & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression))))), 'stable');
+            Temp_Data_Table = table();
+            Temp_Data_Table = DataStructure.('DPC').(char(Temp_Field_Names(Field_Name))).('Avg_Tau');
+            
+            %         Tau_Total= cell2table(~,'VariableNames',Temp_Data_Table.Properties.VariableNames)
+            %         if ~(ismember(Temp_Data_Table,Tau_Total))
+            Tau_Total(start+1:start+size(Temp_Data_Table,1),:)  = Temp_Data_Table;
+            %         end
+            start = start+size(Temp_Data_Table,1);
         end
-        hold off;
-        title(['Cell Cycle Length for ' char((uniExpression(Expression))) ' ' char(unique_Treatments(drug))])
-        legend (temp_legend,'Interpreter', 'none')
-        ylabel('Cell Cycle (1/\tau) (cell/hour)');
-        clearvars temp_legend
-        % Saves Image
-        idcs   = strfind(Excel_Path,'\');
-        Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\DPC Data\Scatter Plots of Cell Cycle Length'];
-        if exist(Save_Path, 'dir')~=7
-            disp(string('Making Directory Graphs to store figures in.'))
-            mkdir (Save_Path)
-        end
-        Save_Path_Name = [Save_Path '\' 'Cell Cycle Length for ' char((uniExpression(Expression))) ' ' char(unique_Treatments(drug)) '.fig'];
-        saveas(fig,Save_Path_Name)
-        %
         
+        Temp_Total_uniExp = unique(Tau_Total.Exp_Name((contains(cell(Tau_Total.Exp_Name),cellstr(uniExpression(Expression)),'IgnoreCase',true))));
+        for drug = 1:size(unique_Treatments,1)
+            fig = figure();hold on;
+            count = 0;
+            for experiment = 1:size(Temp_Total_uniExp)
+                count = count +1;
+                x = categorical(Tau_Total.Treatment((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
+                    &(contains(cell(Tau_Total.Treatment),cellstr(unique_Treatments(drug)))...
+                    |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
+                    & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))));
+                if isempty(x); continue; end
+                x = reordercats(x,Tau_Total.Treatment((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
+                    &(contains(cell(Tau_Total.Treatment),cellstr(unique_Treatments(drug)))...
+                    |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
+                    & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))));
+                y = cell2mat(Tau_Total.SlopeInverse((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
+                    &(contains(cell(Tau_Total.Treatment),cellstr(unique_Treatments(drug)))...
+                    |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
+                    & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression)))));
+                
+                scatter(x,y)
+                temp_legend(count,1) = unique((Tau_Total.Exp_Name((contains(cell(Tau_Total.Exp_Name),cellstr(Temp_Total_uniExp(experiment))))...
+                    &(contains(cell(Tau_Total.Treatment),cellstr(unique_Treatments(drug)))...
+                    |contains(cell(Tau_Total.Treatment),cellstr(unique_Control(1))))...
+                    & contains(cell(Tau_Total.Expression),cell(uniExpression(Expression))))), 'stable');
+            end
+            hold off;
+            title(['Cell Cycle Length for ' char((uniExpression(Expression))) ' ' char(unique_Treatments(drug))])
+            legend (temp_legend,'Interpreter', 'none')
+            ylabel('Cell Cycle (1/\tau) (cell/hour)');
+            clearvars temp_legend
+            % Saves Image
+            idcs   = strfind(Excel_Path,'\');
+            Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\DPC Data\Scatter Plots of Cell Cycle Length'];
+            if exist(Save_Path, 'dir')~=7
+                disp(string('Making Directory Graphs to store figures in.'))
+                mkdir (Save_Path)
+            end
+            Save_Path_Name = [Save_Path '\' 'Cell Cycle Length for ' char((uniExpression(Expression))) ' ' char(unique_Treatments(drug)) '.fig'];
+            saveas(fig,Save_Path_Name)
+            %
+            
+        end
     end
 end
 % --------------------------------------------------------------------------------------------------------------------------------
 %%
-
 
 %% Cell Cycle Vs. Protein Mass
 no = 0;
@@ -199,6 +197,7 @@ end
 %%
 
 %% Graphing Variation between experiments and treatments
+DPC_Known_Field_Names = fieldnames(DataStructure.('DPC'));
 for Expression = 1:size(uniExpression,1)
     
     Temp_Field_Names = DPC_Known_Field_Names((contains(DPC_Known_Field_Names,uniExpression(Expression),'IgnoreCase',true)));
@@ -207,7 +206,7 @@ for Expression = 1:size(uniExpression,1)
     Tau_Total = cell2table(empty_data);
     Tau_Total.Properties.VariableNames = headers;
     
-    for Field_Name = 1:size(Temp_Field_Names,1)    
+    for Field_Name = 1:size(Temp_Field_Names,1)
         Temp_Data_Table = table();
         Temp_Data_Table = DataStructure.('DPC').(char(Temp_Field_Names(Field_Name))).('Non_Avg_Tau');
         Tau_Total  = [Tau_Total;Temp_Data_Table];
@@ -218,15 +217,10 @@ for Expression = 1:size(uniExpression,1)
     outlierIndex = cell2mat(Tau_Total.SlopeInverse) < percntiles(1) | cell2mat(Tau_Total.SlopeInverse) > percntiles(2);
     Tau_Total(outlierIndex,:) = [];
     
-%     x = Tau_Total.Treatment(contains(Tau_Total.Treatment,'DMSO') & contains(Tau_Total.Treatment,'No doxycyclin'))
-%     y = Tau_Total.Normalized(contains(Tau_Total.Treatment,'DMSO') & contains(Tau_Total.Treatment,'No doxycyclin'))
-%     x = Tau_Total.Treatment(contains(Tau_Total.Treatment,'DMSO') & contains(Tau_Total.Treatment,'1000 ng/mL doxycyclin'))
-%     y = Tau_Total.Normalized(contains(Tau_Total.Treatment,'DMSO') & contains(Tau_Total.Treatment,'1000 ng/mL doxycyclin'))
-    
-    Unique_Experiments = unique(Tau_Total.Exp_Name,'stable')
+    Unique_Experiments = unique(Tau_Total.Exp_Name,'stable');
     
     for idx = 1:size(Unique_Experiments,1)
-        figure(); hold on;
+        fig = figure(); hold on;
         x = categorical(Tau_Total.Treatment(contains(Tau_Total.Exp_Name,Unique_Experiments(idx))));
         x = reordercats(x,unique(Tau_Total.Treatment(contains(Tau_Total.Exp_Name,Unique_Experiments(idx))),'stable'));
         y = cell2mat(Tau_Total.Normalized(contains(Tau_Total.Exp_Name,Unique_Experiments(idx))));
@@ -238,11 +232,16 @@ for Expression = 1:size(uniExpression,1)
         end
         grid on
         y_med = zeros(size(Tau_Total.Exp_Name(contains(Tau_Total.Exp_Name,Unique_Experiments(idx))),1),1);
-        y_med(:,1) = median(cell2mat(Tau_Total.Normalized(contains(Tau_Total.Treatment,'DMSO') & contains(Tau_Total.Treatment,'No doxycyclin')& contains(Tau_Total.Exp_Name,Unique_Experiments(idx)))));
+        y_med(:,1) = median(cell2mat(Tau_Total.Normalized(contains(Tau_Total.Treatment,'DMSO')|contains(Tau_Total.Treatment,uniExpression(Expression)) ...
+            & contains(Tau_Total.Treatment,'No doxycyclin')& contains(Tau_Total.Exp_Name,Unique_Experiments(idx)))));
         line(x,double(y_med),'Color','red','LineStyle','--')
-        title(Unique_Experiments(idx))
+        title(Unique_Experiments(idx),'Interpreter', 'none')
         hold off;
+        subfolder = 'Individual_Experiment_Variation Data\';
+        filename = ['Normalized Cell Cycle Experiment Variation for ' char(uniExpression(Expression)) ' RPE1, Experiment_ ' char(Unique_Experiments(idx))];
+        saveFigure(Excel_Path,filename,subfolder,fig)
     end
+    
     clearvars x y
     
     Unique_Treatments = unique(Tau_Total.Treatment,'stable');
@@ -258,8 +257,6 @@ for Expression = 1:size(uniExpression,1)
     end
     uni_Drugs = unique(uni_Drugs,'stable');
     
-    
-
     for drug = 1:size(uni_Drugs,1)
         fig = figure(); hold on; coloridx = 1;
         for experiment = 1:size(Unique_Experiments,1)
@@ -269,7 +266,7 @@ for Expression = 1:size(uniExpression,1)
                 &contains(Tau_Total.Exp_Name,Unique_Experiments(experiment))),'stable'));
             y = cell2mat(Tau_Total.Normalized(contains(Tau_Total.Treatment,uni_Drugs(drug))&contains(Tau_Total.Exp_Name,Unique_Experiments(experiment))|contains(Tau_Total.Treatment,'DMSO')...
                 &contains(Tau_Total.Exp_Name,Unique_Experiments(experiment))));
-
+            
             for kk = 1:size(x,1)
                 ax = gca; ax.ColorOrderIndex = coloridx; %Sets current color to plot
                 x_set = categorical(x(kk));
@@ -282,28 +279,23 @@ for Expression = 1:size(uniExpression,1)
                     sp_size = 25
                 end
                 sph = scatter(x_set,y_set)
-
+                
             end % end of for loop
             coloridx=coloridx+1; %increase colour id count to change the colour for the next unique experiment
         end
-%         lh = legend(Unique_Experiments(experiment))
+        %         lh = legend(Unique_Experiments(experiment))
         grid on;title(['Normalized Cell Cycle Experiment Variation for ' char(uniExpression(Expression)) ' RPE1, Drug_ ' char(uni_Drugs(drug))]);
         hold off;
         
-        idcs   = strfind(Excel_Path,'\');
-        Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\Variation Data\'];
-        if exist(Save_Path, 'dir')~=7
-            disp(string('Making Directory Graphs to store figures in.'))
-            mkdir (Save_Path)
-        end
-        Save_Path_Name = [Save_Path 'Normalized Cell Cycle Experiment Variation for ' char(uniExpression(Expression)) ' RPE1, Drug_ ' char(uni_Drugs(drug))];
-        saveas(fig,Save_Path_Name)
+        subfolder = 'Grouped_Experiment_Variation Data\';
+        filename = ['Normalized Cell Cycle Experiment Variation for ' char(uniExpression(Expression)) ' RPE1, Drug_ ' char(uni_Drugs(drug))]
+        saveFigure(Excel_Path,filename,subfolder,fig)
         
         figHandle = figure();hold on;
         for experiment = 1:size(Unique_Experiments,1)
-        
+            
             plot(experiment, experiment)
-           legHandle = legend(Unique_Experiments,'Interpreter', 'none')
+            legHandle = legend(Unique_Experiments,'Interpreter', 'none')
         end
         idcs   = strfind(Excel_Path,'\');
         Save_Path = [Excel_Path(1:idcs(size(idcs,2)-1)) 'Graphs\Variation Data\'];
@@ -311,18 +303,16 @@ for Expression = 1:size(uniExpression,1)
             disp(string('Making Directory Graphs to store figures in.'))
             mkdir (Save_Path)
         end
-        fileName = [Save_Path 'Legend for ' char(uniExpression(Expression)) ', Drug_ ' char(uni_Drugs(drug))]
-        fileType = 'png'
+        fileName = [Save_Path 'Legend for ' char(uniExpression(Expression)) ', Drug_ ' char(uni_Drugs(drug))];
+        fileType = 'png';
         saveLegendToImage(figHandle, legHandle, fileName, fileType)
     end
     
     clearvars x y
 end
-%% 
+%%
 
-
-
-%% 
+%%
 system('taskkill /F /IM EXCEL.EXE');
 delete(gcp('nocreate')) %Shuts down parrallel pool
 toc

@@ -65,6 +65,11 @@ for unique_experiment = 1:size(Total_uniExp,1)
     Exp_Name = char(unique(TempData.Exp_Name));
     ExpressionStr = unique(TempData.Expression,'stable');
     ExpressionStr = strtrim(split(ExpressionStr,','));
+    if isempty(DataStructure.('Expressions'))
+        DataStructure.('Expressions') = ExpressionStr;
+    elseif contains(DataStructure.('Expressions'),ExpressionStr)==0
+        DataStructure.('Expressions') = ExpressionStr;
+    end    
     CellLine = char(unique(TempData.CellLine));
     Date = unique(string(TempData.Date));
     Non_Avg_Data_Input = DataStructure.('DPC').(FieldName).('Non_Averaged_CellNumber');
