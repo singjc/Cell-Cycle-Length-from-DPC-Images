@@ -94,8 +94,8 @@ for unique_experiment = 1:size(Total_uniExp,1)
     Plate_Values = DataStructure.('DPC').(FieldName).('Non_Avg_Tau').SlopeInverse;
     num_text = cellstr(string(round(cell2mat(reshape(Plate_Values,[],10)))));
     Plate_Values = cell2mat(Plate_Values);
-    Plate_Values(Plate_Values<0) = NaN;
-    Plate_Values(Plate_Values>(1.7*min(Plate_Values(Plate_Values>0)))) = NaN;
+%     Plate_Values(Plate_Values<0) = NaN;
+%     Plate_Values(Plate_Values>(1.7*min(Plate_Values(Plate_Values>0)))) = NaN;
     Plate_Values = num2cell(Plate_Values);
     fig = figure;microplateplot(cell2mat(reshape(Plate_Values,[],10)),'TEXTLABELS',num_text,'MissingValueColor',[0,0,0],'TextFontSize',8);colorbar
     colormap('cool')

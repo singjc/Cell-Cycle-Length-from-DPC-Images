@@ -360,4 +360,36 @@ end
 % clearvars i
 %% -------------------------------------------------------------------------------------------------------------------------------
 
+%% ----------------------------------------- Specific Variables Plot --------------------------------------------------------
+
+[selection,~] = listdlg('PromptString','Select which Treatments you wish to have on the same plot.','SelectionMode','multiple','ListString',Unique_Drug,'ListSize',[300 200],'CancelString','None'); %Prompts user what plots they want
+var_to_plot = Unique_Drug(selection);
+% var_to_plot = {'siCON','siLKB1'}';
+fig = figure(); 
+for treat = 1:size(var_to_plot,1)
+    hold on;
+    x = str2double(Time_Points);
+    y = (cellfun(@str2num,(table2cell(Format_Data_Input(strcmp((Format_Data_Input.Drug1),var_to_plot(treat)),4:size(Format_Data_Input,2)))')));
+    for value = 1:size(y,2)
+        temp_y = y(:,value);
+        [curvefit,~] = fit(x,y(:,value),'exp1');
+        p1 = plot (x,temp_y,'o');
+        last_colour = p1.Color;
+        h2 = plot(curvefit, '--');
+        h2.Color=last_colour;
+        set(get(get(h2,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
+        hdle=findobj(gcf,'type','legend'); %Stores a handle for legend objects
+        delete(hdle) %Deletes legend objects to prevent them from popping up
+    end
+end
+hold off;
+title(['Exponential Growth for ' char(join(var_to_plot', ' and ')) ' cells ' char(Date)]);ylabel('Cell Number');xlabel('Time (hours)');
+legend(Format_Data_Input.Treatment(contains(Format_Data_Input.Treatment,var_to_plot)),'Interpreter', 'none')
+
+fileName = ['Exponential Growth for ' char(join(var_to_plot', ' and '))  ' cells ' char(Date) '.fig'];
+subfolder = 'DPC Data\Exponetial Cell Number\';
+[Save_Path] = saveFigure(Excel_Path,fileName,subfolder,fig);
+clearvars fileName subfolder
+%% -------------------------------------------------------------------------------------------------------------------------------
+
 end
